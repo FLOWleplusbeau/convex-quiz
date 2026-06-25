@@ -11,7 +11,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/play/$code')({ component: Play })
 
-type Identity = { participantId: string; name: string }
+type Identity = { participantId: string; name: string; token: string }
 
 function Play() {
   const { code } = Route.useParams()
@@ -72,7 +72,7 @@ function JoinForm({
     setError(null)
     try {
       const res = await joinRoom({ code, name: n })
-      onJoined({ participantId: res.participantId, name: n })
+      onJoined({ participantId: res.participantId, name: n, token: res.token })
     } catch {
       setError('Could not join — the room may have ended.')
     }
@@ -220,6 +220,7 @@ function Game({
     try {
       await submitAnswer({
         participantId: identity.participantId as Id<'participants'>,
+        token: identity.token,
         questionId: questionId as Id<'questions'>,
         choiceIndex: i,
       })

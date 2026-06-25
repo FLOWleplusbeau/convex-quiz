@@ -42,12 +42,15 @@ export default defineSchema({
     .index('by_code', ['code'])
     .index('by_host', ['hostId']),
 
-  // A guest player inside a room.
+  // A guest player inside a room. `secret` is an unguessable token returned only
+  // to the joiner and required to submit answers (prevents acting as another
+  // player, since participant ids are visible in the leaderboard).
   participants: defineTable({
     roomId: v.id('rooms'),
     name: v.string(),
     score: v.number(),
     joinedAt: v.number(),
+    secret: v.optional(v.string()),
   }).index('by_room', ['roomId']),
 
   // One answer per participant per question.

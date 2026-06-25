@@ -143,25 +143,33 @@ export const joinRoom = mutation({
     if (!room) throw new Error('No room with that code')
     if (room.state === 'ended') throw new Error('This quiz has ended')
 
+    // Unguessable token, returned only to this joiner and required to submit
+    // answers — participant ids are public via the leaderboard.
+    const secret = crypto.randomUUID()
     const participantId = await ctx.db.insert('participants', {
       roomId: room._id,
       name: name.trim().slice(0, 24) || 'Player',
       score: 0,
       joinedAt: Date.now(),
+      secret,
     })
-    return { participantId, roomId: room._id }
+    return { participantId, roomId: room._id, token: secret }
   },
 })
 
 export const submitAnswer = mutation({
   args: {
     participantId: v.id('participants'),
+    token: v.string(),
     questionId: v.id('questions'),
     choiceIndex: v.number(),
   },
-  handler: async (ctx, { participantId, questionId, choiceIndex }) => {
+  handler: async (ctx, { participantId, token, questionId, choiceIndex }) => {
     const participant = await ctx.db.get(participantId)
     if (!participant) throw new Error('Unknown player')
+    // Prove ownership of this participant before writing on its behalf.
+    if (!participant.secret || participant.secret !== token)
+      throw new Error('Not your player')
     const room = await ctx.db.get(participant.roomId)
     if (!room || room.state !== 'question') throw new Error('Not accepting answers')
 
